@@ -51,7 +51,7 @@ naclkeypair: naclkeypair.o
 	$(CC) -o naclkeypair naclkeypair.o $(LDFLAGS)
 
 sigmavpn: main.o modules.o dep/ini.o
-	$(CC) -o sigmavpn main.o modules.o dep/ini.o $(LDFLAGS)
+	$(CC) -o sigmavpn main.o -lpcap modules.o dep/ini.o $(LDFLAGS)
 
 %.o: %.c $(HEADERS)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@

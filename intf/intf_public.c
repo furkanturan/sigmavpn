@@ -94,22 +94,28 @@ sigma_intf_priv;
 
 
 pcap_t* descr;
+ssize_t readsize;
+int counter = 1;
 
 static ssize_t intf_write(sigma_intf *instance, const uint8_t* input, size_t len)
 {
-    sigma_intf_priv* tuntap = (sigma_intf_priv*) instance;
+//    sigma_intf_priv* tuntap = (sigma_intf_priv*) instance;
+//
+//    if (!tuntap->filedesc < 0)
+//        return -1;
+//
+//    return write(tuntap->baseintf.filedesc, input, len);
 
-    if (!tuntap->filedesc < 0)
-        return -1;
-
-    return write(tuntap->baseintf.filedesc, input, len);
+	return 0;
 }
 
 void my_callback(u_char* args, const struct pcap_pkthdr* pkthdr, u_char* packet)
 {
     u_int16_t i = 0;
 
-    printf("\n");
+    readsize = pkthdr->len;
+
+    printf("\nETH Frame %d - (%d): ", counter++, pkthdr->len);
 
 	for(i=0; i< pkthdr->len; i++)
 	{
@@ -121,7 +127,7 @@ static ssize_t intf_read(sigma_intf *instance, uint8_t* output, size_t len)
 {
     pcap_dispatch(descr, 1, (void *) my_callback, NULL);
 
-    return 0;
+    return readsize;
 }
 
 static int intf_init(sigma_intf* instance)
@@ -136,7 +142,7 @@ static int intf_init(sigma_intf* instance)
 
 	char errbuf[PCAP_ERRBUF_SIZE];
 
-	descr = pcap_open_live(tuntap->nodename, BUFSIZ, 0, -1, errbuf);
+	descr = pcap_open_live(tuntap->nodename, BUFSIZ, 1, -1, errbuf);
 	if(descr == NULL)
 	{
 		printf("pcap_open_live(): %s\n", errbuf);
@@ -150,7 +156,7 @@ static int intf_init(sigma_intf* instance)
 
 	printf("Public Interface is initialized for %s.\n", tuntap->nodename);
 
-	tuntap->baseintf.filedesc = pcap_get_selectable_fd(descr);
+	tuntap->baseintf.filedesc = pcap_fileno(descr);
 
     return 0;
 }

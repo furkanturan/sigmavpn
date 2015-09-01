@@ -39,6 +39,7 @@
 #include <netinet/in.h>
 #include <netdb.h>
 #include <errno.h>
+#include <net/if.h>
 
 #include "../intf.h"
 
@@ -57,6 +58,7 @@ typedef struct sigma_intf_udp
     sigma_address localaddr;
     sigma_address lastrecvaddr;
 
+    char nodename[16];
     long buffersize;
     unsigned int ipv6;
     int remotefloat;
@@ -139,14 +141,41 @@ static int intf_init(sigma_intf* instance)
 {
     sigma_intf_udp* udp = (sigma_intf_udp*) instance;
     char errorstring[64];
+    char bindFlag = 0;
+    // socket function	creates a socket that is bound to a specific transport service provider.
+    //
+    // AF_INET 		: 	The Internet Protocol version 4 (IPv4) address family.
+    // SOCK_DGRAM	: 	A socket type that supports datagrams, which are connectionless,
+    //					unreliable buffers of a fixed (typically small) maximum length.
+    //					This socket type uses the User Datagram Protocol (UDP)
+    //					for the Internet address family (AF_INET or AF_INET6).
+    // IPPROTO_UDP	:	The User Datagram Protocol (UDP).
+    //					This is a possible value when the af parameter is AF_INET
+    //					or AF_INET6 and the type parameter is SOCK_DGRAM.
 
     if (udp->ipv6)
         udp->baseintf.filedesc = socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP);
     else
         udp->baseintf.filedesc = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 
+    // The setsockopt function sets a socket option.
+    //
+    // SO_REUSEADDR	:	Allows the socket to be bound to an address that is already in use.
+
     int optval = 1;
     setsockopt(udp->baseintf.filedesc, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
+
+    if (strcmp(udp->nodename, "") != 0)
+	{
+    	if (setsockopt(udp->baseintf.filedesc, SOL_SOCKET, SO_BINDTODEVICE, udp->nodename, IFNAMSIZ-1) == -1)
+		{
+			perror("SO_BINDTODEVICE");
+			close(udp->baseintf.filedesc);
+			exit(EXIT_FAILURE);
+		}
+
+    	bindFlag = 1;
+	}
 
     if (udp->baseintf.filedesc < 0)
     {
@@ -176,6 +205,9 @@ static int intf_init(sigma_intf* instance)
 
         return -1;
     }
+
+    if(bindFlag)	printf("UDP Interface is initialized for %s.\n", udp->nodename);
+    else			printf("UDP Interface is initialized.\n");
 
     return 0;
 }
@@ -219,7 +251,7 @@ static int intf_set(sigma_intf* instance, char* param, char* value)
                 udp->localaddr.ipv6.sin6_addr = ipv6->sin6_addr;
             }
         }
-            else
+        else
         {
             struct sockaddr_in *ipv4 = (struct sockaddr_in*) results->ai_addr;
 
@@ -232,8 +264,7 @@ static int intf_set(sigma_intf* instance, char* param, char* value)
 
         freeaddrinfo(results);
     }
-        else
-    if (strcmp(param, "localport") == 0)
+    else if (strcmp(param, "localport") == 0)
     {
         unsigned int port = (unsigned int) htons(atoi(value));
 
@@ -242,14 +273,13 @@ static int intf_set(sigma_intf* instance, char* param, char* value)
             if (udp->localaddr.ipv6.sin6_port != port)
                 udp->localaddr.ipv6.sin6_port = port;
         }
-            else
+        else
         {
             if (udp->localaddr.ipv4.sin_port != port)
                 udp->localaddr.ipv4.sin_port = port;
         }
     }
-        else
-    if (strcmp(param, "remoteaddr") == 0)
+    else if (strcmp(param, "remoteaddr") == 0)
     {
         struct addrinfo hints, *results;
         memset(&hints, 0, sizeof(hints));
@@ -297,8 +327,7 @@ static int intf_set(sigma_intf* instance, char* param, char* value)
 
         freeaddrinfo(results);
     }
-        else
-    if (strcmp(param, "remoteport") == 0)
+    else if (strcmp(param, "remoteport") == 0)
     {
         unsigned int port = (unsigned int) htons(atoi(value));
 
@@ -313,15 +342,17 @@ static int intf_set(sigma_intf* instance, char* param, char* value)
                 udp->remoteaddr.ipv4.sin_port = port;
         }
     }
-        else
-    if (strcmp(param, "ipv6") == 0)
+    else if (strcmp(param, "ipv6") == 0)
     {
         udp->ipv6 = atoi(value);
     }
-        else
-    if (strcmp(param, "remotefloat") == 0)
+    else if (strcmp(param, "remotefloat") == 0)
     {
         udp->remotefloat = atoi(value);
+    }
+    else if (strcmp(param, "interface") == 0)
+    {
+    	memcpy(udp->nodename, value, 16);
     }
 
     return 0;

@@ -39,13 +39,25 @@
 
 #ifdef linux
 #include <net/if.h>
+#include <net/if.h>
 #include <linux/if_tun.h>
 #include <linux/if_ether.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #endif
+
+typedef union
+{
+    struct sockaddr_in ipv4;
+    struct sockaddr_in6 ipv6;
+}
+sigma_address;
 
 typedef struct sigma_intf_tuntap
 {
     sigma_intf baseintf;
+
+    sigma_address lastrecvaddr;
 
     int filedesc;
     char nodename[16];
@@ -68,15 +80,27 @@ static ssize_t intf_read(sigma_intf *instance, uint8_t* output, size_t len)
 {
     sigma_intf_tuntap* tuntap = (sigma_intf_tuntap*) instance;
 
+    u_int16_t i = 0;
+
     if (!tuntap->filedesc < 0)
         return -1;
 
-    return read(tuntap->baseintf.filedesc, output, len);
+    ssize_t ret = read(tuntap->baseintf.filedesc, output, len);
+
+    printf("\nETH Frame (%d) (%d): ", (int)len, (int)ret);
+
+	for(i=0; i<(int)len; i++)
+	{
+		printf("%x ", output[i]);
+
+	}
+
+	return ret;
 }
 
 static int intf_init(sigma_intf* instance)
 {
-    sigma_intf_tuntap* tuntap = (sigma_intf_tuntap*) instance;
+	sigma_intf_tuntap* tuntap = (sigma_intf_tuntap*) instance;
 
     if (!tuntap->nodename)
         strcpy(tuntap->nodename, "/dev/tap0");
@@ -116,7 +140,51 @@ static int intf_init(sigma_intf* instance)
         }
     #endif
 
+        printf("TUN/TAP Interface is initialized for %s.\n", tuntap->nodename);
+
     return 0;
+
+//	sigma_intf_tuntap* tuntap = (sigma_intf_tuntap*) instance;
+//
+//	char sender[INET6_ADDRSTRLEN];
+//	int ret, i;
+//	int sockopt;
+//	ssize_t numbytes;
+//	struct ifreq ifopts;	/* set promiscuous mode */
+//	struct ifreq if_ip;	/* get ip addr */
+//	struct sockaddr_storage their_addr;
+//	uint8_t buf[1024];
+//	char ifName[IFNAMSIZ];
+//
+//	strcpy(ifName, "eth1");
+//
+//	memset(&if_ip, 0, sizeof(struct ifreq));
+//
+//	/* Open PF_PACKET socket, listening for EtherType ETHER_TYPE */
+//	if ((tuntap->baseintf.filedesc = socket(PF_PACKET, SOCK_RAW, htons(0x0800))) == -1) {
+//		perror("listener: socket");
+//		return -1;
+//	}
+//
+//	/* Set interface to promiscuous mode - do we need to do this every time? */
+//	strncpy(ifopts.ifr_name, ifName, IFNAMSIZ-1);
+//	ioctl(tuntap->baseintf.filedesc, SIOCGIFFLAGS, &ifopts);
+//	ifopts.ifr_flags |= IFF_PROMISC;
+//	ioctl(tuntap->baseintf.filedesc, SIOCSIFFLAGS, &ifopts);
+//
+//	/* Allow the socket to be reused - incase connection is closed prematurely */
+//	if (setsockopt(tuntap->baseintf.filedesc, SOL_SOCKET, SO_REUSEADDR, &sockopt, sizeof sockopt) == -1) {
+//		perror("setsockopt");
+//		close(tuntap->baseintf.filedesc);
+//		exit(EXIT_FAILURE);
+//	}
+//
+//	/* Bind to device */
+//	if (setsockopt(tuntap->baseintf.filedesc, SOL_SOCKET, SO_BINDTODEVICE, ifName, IFNAMSIZ-1) == -1)	{
+//		perror("SO_BINDTODEVICE");
+//		close(tuntap->baseintf.filedesc);
+//		exit(EXIT_FAILURE);
+//	}
 }
 
 static int intf_set(sigma_intf* instance, char* param, char* value)
@@ -137,19 +205,19 @@ static int intf_set(sigma_intf* instance, char* param, char* value)
 
 static int intf_reload(sigma_intf* instance)
 {
-        sigma_intf_tuntap* tuntap = (sigma_intf_tuntap*) instance;
+	sigma_intf_tuntap* tuntap = (sigma_intf_tuntap*) instance;
 
-        if (close(tuntap->baseintf.filedesc) == -1)
-        {
-                printf("Interface close failed\n");
-                return -1;
-        }
+	if (close(tuntap->baseintf.filedesc) == -1)
+	{
+			printf("Interface close failed\n");
+			return -1;
+	}
 
-        tuntap->baseintf.filedesc = -1;
+	tuntap->baseintf.filedesc = -1;
 
-        intf_init(instance);
+	intf_init(instance);
 
-        return 0;
+	return 0;
 }
 
 extern sigma_intf* intf_descriptor()

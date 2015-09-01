@@ -5,15 +5,15 @@ LIBEXECDIR ?= $(INSTALLDIR)/lib/sigmavpn
 
 SODIUM_CPPFLAGS ?= -I/usr/local/include
 SODIUM_LDFLAGS ?= -L/usr/local/lib -lsodium
-CFLAGS ?= -O2 -fPIC -Wall -Wextra
-CPPFLAGS += $(SODIUM_CPPFLAGS)
+CFLAGS ?= -g3 -O2 -fPIC -Wall -Wextra 
+CPPFLAGS += -g3 -O2 $(SODIUM_CPPFLAGS)
 LDFLAGS += $(SODIUM_LDFLAGS) -ldl -pthread
 DYLIB_CFLAGS ?= $(CFLAGS) -shared
 
 TARGETS_OBJS = dep/ini.o main.o modules.o naclkeypair.o pack.o tai.o
 TARGETS_BIN = naclkeypair sigmavpn
 TARGETS_MODULES = proto/proto_raw.o proto/proto_nacl0.o proto/proto_nacltai.o \
-	intf/intf_tuntap.o intf/intf_udp.o
+	intf/intf_tuntap.o intf/intf_public.o intf/intf_udp.o
 
 TARGETS = $(TARGETS_OBJS) $(TARGETS_BIN) $(TARGETS_MODULES)
 
@@ -39,7 +39,10 @@ proto/proto_nacltai.o: proto/proto_nacltai.c pack.o tai.o
 	$(CC) $(CPPFLAGS) $(SODIUM_CPPFLAGS) proto/proto_nacltai.c pack.o tai.o -o proto/proto_nacltai.o $(DYLIB_CFLAGS) $(SODIUM_LDFLAGS)
 
 intf/intf_tuntap.o: intf/intf_tuntap.c
-	$(CC) $(CPPFLAGS) intf/intf_tuntap.c -o intf/intf_tuntap.o $(DYLIB_CFLAGS)
+	$(CC) $(CPPFLAGS) intf/intf_tuntap.c -o intf/intf_tuntap.o $(DYLIB_CFLAGS) 
+
+intf/intf_public.o: intf/intf_public.c
+	$(CC) $(CPPFLAGS) intf/intf_public.c -o intf/intf_public.o -lpcap $(DYLIB_CFLAGS) 
 
 intf/intf_udp.o: intf/intf_udp.c
 	$(CC) $(CPPFLAGS) intf/intf_udp.c -o intf/intf_udp.o $(DYLIB_CFLAGS)

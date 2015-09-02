@@ -23,30 +23,7 @@
 #endif
 
 #include <pcap.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <errno.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <netinet/if_ether.h>
-#include <net/ethernet.h>
-#include <netinet/ether.h>
-#include <netinet/ip.h>
-
-/*For file descriptors*/
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <fcntl.h>
-#include <sys/types.h>
-#include <sys/select.h>
-#include <errno.h>
-#include <pthread.h>
-#include <signal.h>
-#include <unistd.h>
-#include <assert.h>
-
 
 typedef union
 {
@@ -104,8 +81,6 @@ static ssize_t intf_write(sigma_intf *instance, const uint8_t* input, size_t len
 
 void my_callback(u_char* args, const struct pcap_pkthdr* pkthdr, u_char* packet)
 {
-    u_int16_t i = 0;
-
 	buffer[2] = packet[12];
 	buffer[3] = packet[13];
 

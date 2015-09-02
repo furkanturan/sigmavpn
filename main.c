@@ -366,131 +366,143 @@ int runsession(sigma_session* session)
 
     struct timeval    st;
 
-	st.tv_sec  = 1;
-	st.tv_usec = 0;   /* 1000 = 1 second */
-
     while (1)
     {
-
         FD_ZERO(&sockets);
         FD_SET(session->local->filedesc, &sockets);
+        FD_SET(session->remote->filedesc, &sockets);
+        FD_SET(session->controlpipe[0], &sockets);
 
-//		FD_SET(session->remote->filedesc, &sockets);
-//		FD_SET(session->controlpipe[0], &sockets);
+        int nfds = max(session->local->filedesc, session->remote->filedesc);
+        nfds = max(nfds, session->controlpipe[0]);
+        nfds++;
 
-//      int nfds = max(session->local->filedesc, session->remote->filedesc);
-//      nfds = max(nfds, session->controlpipe[0]);
-//      nfds++;
+    	st.tv_sec  = 0;
+    	st.tv_usec = 100;   /* 1000 = 1 second */
 
-        int len = select(session->local->filedesc+1, &sockets, NULL, NULL, &st);
+        int len = select(nfds, &sockets, NULL, NULL, &st);
 
         if (len < 0)
         {
             fprintf(stderr, "Poll error");
             return -1;
         }
-
-//        if (FD_ISSET(session->controlpipe[0], &sockets) != 0)
-//        {
-//            char buffer;
-//            long readvalue = read(session->controlpipe[0], &buffer, 1);
-//
-//            if (readvalue < 0)
-//            {
-//                fprintf(stderr, "%s: Control read error %ld: %s\n", session->sessionname, readvalue, strerror(errno));
-//                return -1;
-//            }
-//
-//            readvalue = reloadsession(session, buffer);
-//            if (readvalue < 0) return readvalue;
-//            continue;
-//        }
-
-        if (FD_ISSET(session->local->filedesc, &sockets) != 0)
+        else if(len == 0)
         {
-            char tuntapbuf[MAX_BUFFER_SIZE], tuntapbufenc[MAX_BUFFER_SIZE];
-            long readvalue = session->local->read(session->local, tuntapbuf, MAX_BUFFER_SIZE);
-
-            printf("Read Length: %d\n", readvalue);
-
-            if (readvalue < 0)
-            {
-                fprintf(stderr, "%s: Local read error %ld: %s\n", session->sessionname, readvalue, strerror(errno));
-                return -1;
-            }
-//
-//            readvalue = session->proto->encode(session->proto, tuntapbuf, tuntapbufenc, readvalue);
-//
-//            if (readvalue < 0)
-//            {
-//                fprintf(stderr, "%s: Local encode error %ld: %s\n", session->sessionname, readvalue, strerror(errno));
-//                return -1;
-//            }
-//
-//            long writevalue = session->remote->write(session->remote, tuntapbufenc, readvalue);
-//
-//            if (writevalue < 0)
-//            {
-//                if (errno != EINVAL)
-//                {
-//                    fprintf(stderr, "%s: Local write error %ld: %s\n", session->sessionname, writevalue, strerror(errno));
-//                    return -1;
-//                }
-//
-//                fprintf(stderr, "%s: Could not send packet with length %u on remote interface\n", session->sessionname, (unsigned) readvalue);
-//            }
+        	//printf(".");
+        	continue;
         }
 
-//        if (FD_ISSET(session->remote->filedesc, &sockets) != 0)
-//        {
-//        	char udpbuf[MAX_BUFFER_SIZE], udpbufenc[MAX_BUFFER_SIZE];
-//            long readvalue = session->remote->read(session->remote, udpbufenc, MAX_BUFFER_SIZE);
+		if (FD_ISSET(session->controlpipe[0], &sockets) != 0)
+		{
+			char buffer;
+			long readvalue = read(session->controlpipe[0], &buffer, 1);
+
+			if (readvalue < 0)
+			{
+				fprintf(stderr, "%s: Control read error %ld: %s\n", session->sessionname, readvalue, strerror(errno));
+				return -1;
+			}
+
+			readvalue = reloadsession(session, buffer);
+			if (readvalue < 0) return readvalue;
+			continue;
+		}
+
+		if (FD_ISSET(session->local->filedesc, &sockets) != 0)
+		{
+			char tuntapbuf[MAX_BUFFER_SIZE], tuntapbufenc[MAX_BUFFER_SIZE];
+			long readvalue = session->local->read(session->local, tuntapbuf, MAX_BUFFER_SIZE);
+
+			if(readvalue == 0)
+				continue;
 //
-//            if (readvalue < 0)
-//            {
-//                fprintf(stderr, "%s: Remote read error %ld: %s\n", session->sessionname, readvalue, strerror(errno));
-//                return -1;
-//            }
-//
-//            //printf("Read.\n");
-//
-//            readvalue = session->proto->decode(session->proto, udpbufenc, udpbuf, readvalue);
-//
-//            //printf("Decrypted.\n");
-//
-//            if (readvalue < 0)
-//            {
-//                if (errno != EINVAL)
-//                {
-//                    fprintf(stderr, "%s: Fatal remote decode error %ld: %s\n", session->sessionname, readvalue, strerror(errno));
-//                    return -1;
-//                }
-//
-//                fprintf(stderr, "%s: Received invalid packet\n", session->sessionname);
-//            }
-//            else
-//            {
-//                long writevalue = session->local->write(session->local, udpbuf, readvalue);
-//
-//                if (writevalue < 0)
-//                {
-//                    if (errno != EINVAL)
-//                    {
-//                        fprintf(stderr, "%s: Remote write error %ld: %s\n", session->sessionname, writevalue, strerror(errno));
-//                        return -1;
-//                    }
-//
-//                    fprintf(stderr, "%s: Could not send packet with length %u on local interface\n", session->sessionname, (unsigned) readvalue);
-//                }
-//
-//                //printf("Writen.\n");
-//
-//                if (session->remote->updateremote != NULL)
-//                {
-//                    session->remote->updateremote(session->remote);
-//                }
+//			int i;
+//			printf("\nETH (%d): ", readvalue);
+//			for(i=0; i< readvalue; i++)
+//			{
+//				printf("%X ", (u_char)tuntapbuf[i]);
 //			}
-//        }
+
+			if (readvalue < 0)
+			{
+				fprintf(stderr, "%s: Local read error %ld: %s\n", session->sessionname, readvalue, strerror(errno));
+				return -1;
+			}
+
+			readvalue = session->proto->encode(session->proto, tuntapbuf, tuntapbufenc, readvalue);
+
+			if (readvalue < 0)
+			{
+				fprintf(stderr, "%s: Local encode error %ld: %s\n", session->sessionname, readvalue, strerror(errno));
+				return -1;
+			}
+
+			long writevalue = session->remote->write(session->remote, tuntapbufenc, readvalue);
+
+			if (writevalue < 0)
+			{
+				if (errno != EINVAL)
+				{
+					fprintf(stderr, "%s: Local write error %ld: %s\n", session->sessionname, writevalue, strerror(errno));
+					return -1;
+				}
+
+				fprintf(stderr, "%s: Could not send packet with length %u on remote interface\n", session->sessionname, (unsigned) readvalue);
+			}
+		}
+
+		if (FD_ISSET(session->remote->filedesc, &sockets) != 0)
+		{
+			char udpbuf[MAX_BUFFER_SIZE], udpbufenc[MAX_BUFFER_SIZE];
+			long readvalue = session->remote->read(session->remote, udpbufenc, MAX_BUFFER_SIZE);
+
+			if (readvalue < 0)
+			{
+				fprintf(stderr, "%s: Remote read error %ld: %s\n", session->sessionname, readvalue, strerror(errno));
+				return -1;
+			}
+
+			//printf("Read.\n");
+
+			readvalue = session->proto->decode(session->proto, udpbufenc, udpbuf, readvalue);
+
+			//printf("Decrypted.\n");
+
+			if (readvalue < 0)
+			{
+				if (errno != EINVAL)
+				{
+					fprintf(stderr, "%s: Fatal remote decode error %ld: %s\n", session->sessionname, readvalue, strerror(errno));
+					return -1;
+				}
+
+				fprintf(stderr, "%s: Received invalid packet\n", session->sessionname);
+			}
+			else
+			{
+                long writevalue = session->local->write(session->local, udpbuf, readvalue);
+
+                if (writevalue < 0)
+                {
+                    if (errno != EINVAL)
+                    {
+                        fprintf(stderr, "%s: Remote write error %ld: %s\n", session->sessionname, writevalue, strerror(errno));
+                        return -1;
+                    }
+
+                    fprintf(stderr, "%s: Could not send packet with length %u on local interface\n", session->sessionname, (unsigned) readvalue);
+                }
+
+                //printf("Writen.\n");
+
+                if (session->remote->updateremote != NULL)
+                {
+                    session->remote->updateremote(session->remote);
+                }
+			}
+		}
+
     }
 
     return 0;

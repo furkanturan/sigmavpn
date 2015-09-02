@@ -40,6 +40,9 @@ int main(void)
 
     unsigned int i;
 
+
+    printf("Byte Count: %d\nBitCount: %d\n", crypto_box_SECRETKEYBYTES, crypto_box_SECRETKEYBYTES*8);
+
     printf("PRIVATE KEY: ");
 
     for (i = 0; i < crypto_box_SECRETKEYBYTES; i ++)

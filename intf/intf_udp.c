@@ -165,17 +165,17 @@ static int intf_init(sigma_intf* instance)
     int optval = 1;
     setsockopt(udp->baseintf.filedesc, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
 
-//    if (strcmp(udp->nodename, "") != 0)
-//	{
-//    	if (setsockopt(udp->baseintf.filedesc, SOL_SOCKET, SO_BINDTODEVICE, udp->nodename, IFNAMSIZ-1) == -1)
-//		{
-//			perror("SO_BINDTODEVICE");
-//			close(udp->baseintf.filedesc);
-//			exit(EXIT_FAILURE);
-//		}
-//
-//    	bindFlag = 1;
-//	}
+    if (strcmp(udp->nodename, "") != 0)
+	{
+    	if (setsockopt(udp->baseintf.filedesc, SOL_SOCKET, SO_BINDTODEVICE, udp->nodename, IFNAMSIZ-1) == -1)
+		{
+			perror("SO_BINDTODEVICE");
+			close(udp->baseintf.filedesc);
+			exit(EXIT_FAILURE);
+		}
+
+    	bindFlag = 1;
+	}
 
     if (udp->baseintf.filedesc < 0)
     {

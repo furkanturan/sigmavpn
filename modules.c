@@ -41,6 +41,8 @@ sigma_proto* loadproto(char* protoname)
     char path[140];
     snprintf(path, sizeof(path), "%s/proto_%s.o", conf->modulepath, protoname);
 
+    printf("Loading prototype: %s\n", protoname);
+
     void* proto_lib = dlopen(path, RTLD_NOW);
 
     if (!proto_lib)
@@ -64,27 +66,29 @@ sigma_proto* loadproto(char* protoname)
 
 sigma_intf* loadinterface(char* intfname)
 {
-    char path[140];
-    snprintf(path, sizeof(path), "%s/intf_%s.o", conf->modulepath, intfname);
+	char path[140];
+	snprintf(path, sizeof(path), "%s/intf_%s.o", conf->modulepath, intfname);
 
-    void* intf_lib = dlopen(path, RTLD_NOW);
+	printf("Loading interface: %s\n", intfname);
 
-    if (!intf_lib)
-    {
-        printf("Unable to load interface %s: %s\n", intfname, dlerror());
-        exit(-1);
-    }
+	void* intf_lib = dlopen(path, RTLD_NOW);
 
-    void* init = dlsym(intf_lib, "intf_descriptor");
+	if (!intf_lib)
+	{
+		printf("Unable to load interface %s: %s\n", intfname, dlerror());
+		exit(-1);
+	}
 
-    if (!init)
-    {
-        printf("Unable to load interface %s: %s\n", intfname, dlerror());
-        exit(-1);
-    }
+	void* init = dlsym(intf_lib, "intf_descriptor");
 
-    sigma_intf* intf = ((sigma_intf* (*)()) init)();
+	if (!init)
+	{
+		printf("Unable to load interface %s: %s\n", intfname, dlerror());
+		exit(-1);
+	}
 
-    return intf;
+	sigma_intf* intf = ((sigma_intf* (*)()) init)();
+
+	return intf;
 }
 

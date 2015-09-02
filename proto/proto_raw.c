@@ -49,7 +49,7 @@ static int proto_encode(sigma_proto *instance, uint8_t* input, uint8_t* output, 
 
 static int proto_decode(sigma_proto *instance, uint8_t* input, uint8_t* output, size_t len)
 {
-    if (instance->state == 1)
+	if (instance->state == 1)
     {
         memcpy(output, input, len);
         return len;

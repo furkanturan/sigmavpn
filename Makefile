@@ -13,7 +13,7 @@ DYLIB_CFLAGS ?= $(CFLAGS) -shared
 TARGETS_OBJS = dep/ini.o main.o modules.o naclkeypair.o pack.o tai.o
 TARGETS_BIN = naclkeypair sigmavpn
 TARGETS_MODULES = proto/proto_raw.o proto/proto_nacl0.o proto/proto_nacltai.o \
-	intf/intf_tuntap.o intf/intf_public.o intf/intf_udp.o
+	intf/intf_tuntap.o intf/intf_private.o intf/intf_udp.o
 
 TARGETS = $(TARGETS_OBJS) $(TARGETS_BIN) $(TARGETS_MODULES)
 
@@ -41,8 +41,8 @@ proto/proto_nacltai.o: proto/proto_nacltai.c pack.o tai.o
 intf/intf_tuntap.o: intf/intf_tuntap.c
 	$(CC) $(CPPFLAGS) intf/intf_tuntap.c -o intf/intf_tuntap.o $(DYLIB_CFLAGS) 
 
-intf/intf_public.o: intf/intf_public.c
-	$(CC) $(CPPFLAGS) intf/intf_public.c -o intf/intf_public.o -lpcap $(DYLIB_CFLAGS) 
+intf/intf_private.o: intf/intf_private.c
+	$(CC) $(CPPFLAGS) intf/intf_private.c -o intf/intf_private.o -lpcap $(DYLIB_CFLAGS) 
 
 intf/intf_udp.o: intf/intf_udp.c
 	$(CC) $(CPPFLAGS) intf/intf_udp.c -o intf/intf_udp.o $(DYLIB_CFLAGS)
@@ -51,7 +51,7 @@ naclkeypair: naclkeypair.o
 	$(CC) -o naclkeypair naclkeypair.o $(LDFLAGS)
 
 sigmavpn: main.o modules.o dep/ini.o
-	$(CC) -o sigmavpn main.o -lpcap modules.o dep/ini.o $(LDFLAGS)
+	$(CC) -o sigmavpn main.o modules.o dep/ini.o $(LDFLAGS)
 
 %.o: %.c $(HEADERS)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@

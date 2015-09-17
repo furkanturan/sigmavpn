@@ -105,7 +105,7 @@ static int intf_init(sigma_intf* instance)
 	if (strcmp(private->nodename, "") == 0)
 	{
 		fprintf(stderr, "You should specify a device name (eth0, wlan1, e.g.) for public interface.\n");
-    	return -1;
+		return -1;
 	}
 
 	char errbuf[PCAP_ERRBUF_SIZE];
@@ -136,7 +136,7 @@ static int intf_init(sigma_intf* instance)
 	buffer[0] = 0;
 	buffer[1] = 0;
 
-    return 0;
+	return 0;
 
 }
 

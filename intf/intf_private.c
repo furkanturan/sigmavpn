@@ -96,9 +96,6 @@ static ssize_t intf_read(sigma_intf *instance, uint8_t* output, size_t len)
 
 	memcpy(output, buffer, bufferlength+4);
 
-	if(bufferlength>0)
-	    printf("B %d\n", bufferlength);
-
     return bufferlength;
 }
 

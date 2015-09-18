@@ -95,6 +95,10 @@ static ssize_t intf_read(sigma_intf *instance, uint8_t* output, size_t len)
 	pcap_dispatch(descr, 1, (void *) my_callback, NULL);
 
 	memcpy(output, buffer, bufferlength+4);
+
+	if(bufferlength>0)
+	    printf("B %d\n", bufferlength);
+
     return bufferlength;
 }
 
@@ -129,7 +133,7 @@ static int intf_init(sigma_intf* instance)
 		return -1;
 	}
 
-	printf("Public Interface is initialized for %s.\n", private->nodename);
+	printf("Private Interface is initialized for %s.\n", private->nodename);
 
 	private->baseintf.filedesc = pcap_fileno(descr);
 

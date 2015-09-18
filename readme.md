@@ -28,6 +28,8 @@ source /opt/Xilinx/Vivado/2014.3.1/settings64.sh
 Instructions are [here](http://doc.libsodium.org/installation/index.html#cross-compiling),
 but I changed them for `arm-xilinx-linux-gnueabi`
 
+Locate the libpcap folder as ../libsodium_installdir
+
 ```
 export PATH=/opt/Xilinx/SDK/2014.3.1/gnu/arm/lin/bin:$PATH
 export CFLAGS='-g'

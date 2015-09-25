@@ -45,58 +45,38 @@ typedef struct sigma_intf_priv
 }
 sigma_intf_priv;
 
-
 pcap_t* descr;
-ssize_t bufferlength;
-uint8_t buffer[1536];
 
 static ssize_t intf_write(sigma_intf *instance, const uint8_t* input, size_t len)
 {
-	sigma_intf_priv* private = (sigma_intf_priv*) instance;
 
-	char pcap_errbuf[PCAP_ERRBUF_SIZE];
-	pcap_errbuf[0]='\0';
-	pcap_t* pcap=pcap_open_live(private->nodename, 96, 0, 0, pcap_errbuf);
-
-	if (pcap_errbuf[0]!='\0')
+	if (pcap_inject(descr, input+4, len-4) == -1)
 	{
-		fprintf(stderr,"%s",pcap_errbuf);
+		printf("PCAP Send Error:\n");
+		return -1;
 	}
-
-	if (!pcap) {
-		exit(1);
-	}
-
-	if (pcap_inject(pcap, input+4, len-4) == -1)
-	{
-		pcap_perror(pcap,0);
-		pcap_close(pcap);
-		exit(1);
-	}
-
-	pcap_close(pcap);
 
 	return 0;
 }
 
-void my_callback(u_char* args, const struct pcap_pkthdr* pkthdr, u_char* packet)
-{
-	buffer[2] = packet[12];
-	buffer[3] = packet[13];
-
-    bufferlength = pkthdr->len+4;
-    memcpy(buffer+4, packet, bufferlength);
-}
-
 static ssize_t intf_read(sigma_intf *instance, uint8_t* output, size_t len)
 {
-	bufferlength = 0;
+	struct pcap_pkthdr *header;
+	const u_char *pkt_data;
 
-	pcap_dispatch(descr, 1, (void *) my_callback, NULL);
+	if(pcap_next_ex( descr, &header, &pkt_data)==1)
+	{
+		output[0] = 0;
+		output[1] = 0;
+		output[2] = pkt_data[12];
+		output[3] = pkt_data[13];
 
-	memcpy(output, buffer, bufferlength+4);
+		memcpy(output+4, pkt_data, header->len);
+	    return header->len+4;
+	}
 
-    return bufferlength;
+	return 0;
+
 }
 
 static int intf_init(sigma_intf* instance)
@@ -133,9 +113,6 @@ static int intf_init(sigma_intf* instance)
 	printf("Private Interface is initialized for %s.\n", private->nodename);
 
 	private->baseintf.filedesc = pcap_fileno(descr);
-
-	buffer[0] = 0;
-	buffer[1] = 0;
 
 	return 0;
 

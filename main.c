@@ -416,13 +416,6 @@ int runsession(sigma_session* session)
 
 			if(readvalue == 0)
 				continue;
-//
-//			int i;
-//			printf("\nETH (%d): ", readvalue);
-//			for(i=0; i< readvalue; i++)
-//			{
-//				printf("%X ", (u_char)tuntapbuf[i]);
-//			}
 
 			if (readvalue < 0)
 			{
@@ -463,11 +456,7 @@ int runsession(sigma_session* session)
 				return -1;
 			}
 
-			//printf("Read.\n");
-
 			readvalue = session->proto->decode(session->proto, udpbufenc, udpbuf, readvalue);
-
-			//printf("Decrypted.\n");
 
 			if (readvalue < 0)
 			{
@@ -493,8 +482,6 @@ int runsession(sigma_session* session)
 
                     fprintf(stderr, "%s: Could not send packet with length %u on local interface\n", session->sessionname, (unsigned) readvalue);
                 }
-
-                //printf("Writen.\n");
 
                 if (session->remote->updateremote != NULL)
                 {

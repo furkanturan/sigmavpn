@@ -84,7 +84,7 @@ static ssize_t intf_write(sigma_intf *instance, const uint8_t* input, size_t len
     if (udp->ipv6)
         ret = sendto(udp->baseintf.filedesc, input, len, 0, (struct sockaddr*) &udp->remoteaddr, sizeof(struct sockaddr_in6));
     else
-        ret = sendto(udp->baseintf.filedesc, input, len, 0, (struct sockaddr*) &udp->remoteaddr, sizeof(struct sockaddr_in));
+    	ret = sendto(udp->baseintf.filedesc, input, len, 0, (struct sockaddr*) &udp->remoteaddr, sizeof(struct sockaddr_in));
 
     return ret;
 }

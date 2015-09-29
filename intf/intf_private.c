@@ -2,8 +2,6 @@
 //  intf_private.h
 //
 
-
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -21,6 +19,12 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #endif
+
+
+#include <linux/if_packet.h>
+#include <sys/ioctl.h>
+#include <sys/socket.h>
+#include <netinet/ether.h>
 
 #include <pcap.h>
 #include <errno.h>
@@ -45,18 +49,27 @@ typedef struct sigma_intf_priv
 }
 sigma_intf_priv;
 
+int sockfd;
 pcap_t* descr;
+
+struct sockaddr_ll socket_address;
 
 static ssize_t intf_write(sigma_intf *instance, const uint8_t* input, size_t len)
 {
+	/* Destination MAC */
+	memcpy(socket_address.sll_addr, input+4, 6);
 
-	if (pcap_inject(descr, input+4, len-4) == -1)
-	{
-		printf("PCAP Send Error:\n");
-		return -1;
-	}
+	return sendto(sockfd, input+4, len-4, 0, (struct sockaddr*)&socket_address, sizeof(struct sockaddr_ll));
 
-	return 0;
+
+//	if (pcap_sendpacket(descr, input+4, len-4) == -1)
+//	{
+//		printf("PCAP Send Error:\n");
+//		return -1;
+//	}
+//
+//	return 0;
+
 }
 
 static ssize_t intf_read(sigma_intf *instance, uint8_t* output, size_t len)
@@ -110,9 +123,40 @@ static int intf_init(sigma_intf* instance)
 		return -1;
 	}
 
-	printf("Private Interface is initialized for %s.\n", private->nodename);
-
 	private->baseintf.filedesc = pcap_fileno(descr);
+
+
+	///////////////
+
+	struct ifreq if_mac;
+	struct ifreq if_idx;
+
+	if ((sockfd = socket(AF_PACKET, SOCK_RAW, IPPROTO_RAW)) == -1)
+	{
+		perror("socket");
+	}
+
+	/* Get the index of the interface to send on */
+	memset(&if_idx, 0, sizeof(struct ifreq));
+	strncpy(if_idx.ifr_name, private->nodename, IFNAMSIZ-1);
+	if (ioctl(sockfd, SIOCGIFINDEX, &if_idx) < 0)
+		perror("SIOCGIFINDEX");
+
+	/* Get the MAC address of the interface to send on */
+	memset(&if_mac, 0, sizeof(struct ifreq));
+	strncpy(if_mac.ifr_name, private->nodename, IFNAMSIZ-1);
+	if (ioctl(sockfd, SIOCGIFHWADDR, &if_mac) < 0)
+		perror("SIOCGIFHWADDR");
+
+	/* Index of the network device */
+	socket_address.sll_ifindex = if_idx.ifr_ifindex;
+
+	/* Address length*/
+	socket_address.sll_halen = ETH_ALEN;
+
+
+
+	printf("Private Interface is initialized for %s.\n", private->nodename);
 
 	return 0;
 
@@ -164,3 +208,4 @@ extern sigma_intf* intf_descriptor()
 
     return (sigma_intf*) intf_private;
 }
+

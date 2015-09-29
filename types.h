@@ -35,7 +35,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <pthread.h>
-#define MAX_BUFFER_SIZE 1536
+#define MAX_BUFFER_SIZE 1555
 
 #include "proto.h"
 #include "intf.h"

@@ -54,25 +54,24 @@ pcap_t* descr;
 
 struct sockaddr_ll socket_address;
 
-static ssize_t intf_write(sigma_intf *instance, const uint8_t* input, size_t len)
+static ssize_t intf_write(  sigma_intf *instance, 
+                            const uint8_t* input, 
+                            size_t len)
 {
 	/* Destination MAC */
 	memcpy(socket_address.sll_addr, input+4, 6);
 
-	return sendto(sockfd, input+4, len-4, 0, (struct sockaddr*)&socket_address, sizeof(struct sockaddr_ll));
-
-
-//	if (pcap_sendpacket(descr, input+4, len-4) == -1)
-//	{
-//		printf("PCAP Send Error:\n");
-//		return -1;
-//	}
-//
-//	return 0;
-
+    return  sendto( sockfd,
+                    input+4, 
+                    len-4, 
+                    0, 
+                    (struct sockaddr*)&socket_address, 
+                    sizeof(struct sockaddr_ll));
 }
 
-static ssize_t intf_read(sigma_intf *instance, uint8_t* output, size_t len)
+static ssize_t intf_read(   sigma_intf *instance, 
+                            uint8_t* output, 
+                            size_t len)
 {
 	struct pcap_pkthdr *header;
 	const u_char *pkt_data;
@@ -199,11 +198,11 @@ extern sigma_intf* intf_descriptor()
 {
     sigma_intf_priv* intf_private = calloc(1, sizeof(sigma_intf_priv));
 
-    intf_private->baseintf.init = intf_init;
-    intf_private->baseintf.read = intf_read;
-    intf_private->baseintf.write = intf_write;
-    intf_private->baseintf.set = intf_set;
-    intf_private->baseintf.reload = intf_reload;
+    intf_private->baseintf.init         = intf_init;
+    intf_private->baseintf.read         = intf_read;
+    intf_private->baseintf.write        = intf_write;
+    intf_private->baseintf.set          = intf_set;
+    intf_private->baseintf.reload       = intf_reload;
     intf_private->baseintf.updateremote = NULL;
 
     return (sigma_intf*) intf_private;

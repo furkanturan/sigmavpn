@@ -11,16 +11,16 @@ ifeq ($(ZYBO),1)
 
 PWD		= $(shell pwd)
 
-INSTALLDIR ?= $(PWD)/../sigmavpn_installdir
+INSTALLDIR ?= $(PWD)/../BootFiles/sigmavpn/sigmavpn_installdir
 BINDIR ?= $(INSTALLDIR)/bin
 SYSCONFDIR ?= $(INSTALLDIR)/etc
 LIBEXECDIR ?= $(INSTALLDIR)/lib/sigmavpn
 
-SODIUM_INSTALLDIR ?= $(PWD)/../libsodium_installdir
+SODIUM_INSTALLDIR ?= $(PWD)/../sigmavpn_deps/libsodium_installdir
 SODIUM_CPPFLAGS ?= -I$(SODIUM_INSTALLDIR)/include
 SODIUM_LDFLAGS ?= -Wl,-static -L$(SODIUM_INSTALLDIR)/lib -lsodium -Wl,-Bdynamic
 
-LIBPCAP_PATH ?= $(PWD)/../libpcap-1.7.4
+LIBPCAP_PATH ?= $(PWD)/../sigmavpn_deps/libpcap-1.7.4
 LIBPCAP_CPPFLAGS ?= -I$(LIBPCAP_PATH)
 LIBPCAP_LDFLAGS ?= -L$(LIBPCAP_PATH) -lpcap
 
@@ -30,10 +30,11 @@ CPPFLAGS += -g3 -O2 $(SODIUM_CPPFLAGS)
 LDFLAGS += $(SODIUM_LDFLAGS) -ldl -pthread
 DYLIB_CFLAGS ?= $(CFLAGS) -shared
 
-TARGETS_OBJS = dep/ini.o main.o modules.o naclkeypair.o pack.o tai.o
+TARGETS_OBJS = dep/ini.o main.o modules.o naclkeypair.o pack.o tai.o 
 TARGETS_BIN = naclkeypair sigmavpn
-TARGETS_MODULES = proto/proto_raw.o proto/proto_nacl0.o proto/proto_nacltai.o \
-	intf/intf_tuntap.o intf/intf_private.o intf/intf_udp.o
+TARGETS_MODULES = proto/proto_hwtai.o \
+    proto/proto_raw.o proto/proto_nacl0.o proto/proto_nacltai.o \
+    intf/intf_tuntap.o intf/intf_private.o intf/intf_udp.o
 
 TARGETS = $(TARGETS_OBJS) $(TARGETS_BIN) $(TARGETS_MODULES)
 
@@ -48,6 +49,10 @@ install: all
 	mkdir -p $(BINDIR) $(SYSCONFDIR) $(LIBEXECDIR)
 	cp $(TARGETS_BIN) $(BINDIR)
 	cp $(TARGETS_MODULES) $(LIBEXECDIR)
+
+proto/proto_hwtai.o: proto/proto_hwnacltai.c pack.o tai.o
+	$(CC) $(CPPFLAGS) $(SODIUM_CPPFLAGS) proto/proto_hwnacltai.c pack.o tai.o \
+    -o proto/proto_hwtai.o $(DYLIB_CFLAGS) $(SODIUM_LDFLAGS)
 
 proto/proto_raw.o: proto/proto_raw.c
 	$(CC) $(CPPFLAGS) $(SODIUM_CPPFLAGS) proto/proto_raw.c -o \
@@ -101,7 +106,10 @@ DYLIB_CFLAGS ?= $(CFLAGS) -shared
 TARGETS_OBJS = dep/ini.o main.o modules.o naclkeypair.o pack.o tai.o
 TARGETS_BIN = naclkeypair sigmavpn
 TARGETS_MODULES = proto/proto_raw.o proto/proto_nacl0.o proto/proto_nacltai.o \
-	intf/intf_tuntap.o intf/intf_private.o intf/intf_udp.o
+	intf/intf_tuntap.o intf/intf_udp.o 
+    #intf/intf_private.o
+
+CC = gcc
 
 TARGETS = $(TARGETS_OBJS) $(TARGETS_BIN) $(TARGETS_MODULES)
 
@@ -133,9 +141,9 @@ intf/intf_tuntap.o: intf/intf_tuntap.c
 	$(CC) $(CPPFLAGS) intf/intf_tuntap.c -o \
 		intf/intf_tuntap.o $(DYLIB_CFLAGS)
 
-intf/intf_private.o: intf/intf_private.c
-	$(CC) $(CPPFLAGS) intf/intf_private.c -o \
-		intf/intf_private.o -lpcap $(DYLIB_CFLAGS)
+# intf/intf_private.o: intf/intf_private.c
+# 	$(CC) $(CPPFLAGS) intf/intf_private.c -o \
+# 		intf/intf_private.o -lpcap $(DYLIB_CFLAGS)
 
 intf/intf_udp.o: intf/intf_udp.c
 	$(CC) $(CPPFLAGS) intf/intf_udp.c -o intf/intf_udp.o $(DYLIB_CFLAGS)

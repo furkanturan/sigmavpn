@@ -41,8 +41,8 @@
 #include "../tai.h"
 #include "../pack.h"
 
-#define noncelength TAIA_PACK_LEN
-#define nonceoffset (crypto_box_NONCEBYTES - noncelength)
+#define noncelength TAIA_PACK_LEN                           // 16
+#define nonceoffset (crypto_box_NONCEBYTES - noncelength)   // 24 - 16 = 8
 #define rxtaiacount 16
 
 typedef struct sigma_proto_nacl

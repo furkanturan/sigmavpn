@@ -322,9 +322,35 @@ int reloadsession(sigma_session* session, char operation)
     return 0;
 }
 
+#include <termios.h>
+
+struct termios orig_termios;
+
+void reset_terminal_mode()
+{
+    tcsetattr(0, TCSANOW, &orig_termios);
+}
+
+void set_conio_terminal_mode()
+{
+    struct termios new_termios;
+
+    /* take two copies - one for now, one for later */
+    tcgetattr(0, &orig_termios);
+    memcpy(&new_termios, &orig_termios, sizeof(new_termios));
+
+    /* register cleanup handler, and set the new terminal mode */
+    atexit(reset_terminal_mode);
+    cfmakeraw(&new_termios);
+    tcsetattr(0, TCSANOW, &new_termios);
+}
+
+
 int runsession(sigma_session* session)
 {
     fd_set sockets;
+
+     set_conio_terminal_mode();
 
     if (session->proto == NULL)
     {
@@ -372,6 +398,7 @@ int runsession(sigma_session* session)
         FD_SET(session->local->filedesc, &sockets);
         FD_SET(session->remote->filedesc, &sockets);
         FD_SET(session->controlpipe[0], &sockets);
+        FD_SET(0, &sockets);
 
         int nfds = max(session->local->filedesc, session->remote->filedesc);
         nfds = max(nfds, session->controlpipe[0]);
@@ -384,8 +411,9 @@ int runsession(sigma_session* session)
 
         if (len < 0)
         {
-            fprintf(stderr, "Poll error");
-            return -1;
+            //fprintf(stderr, "Poll error");
+            //return -1;
+            continue;
         }
         else if(len == 0)
         {
@@ -443,6 +471,7 @@ int runsession(sigma_session* session)
 
 				fprintf(stderr, "%s: Could not send packet with length %u on remote interface\n", session->sessionname, (unsigned) readvalue);
 			}
+			continue;
 		}
 
 		if (FD_ISSET(session->remote->filedesc, &sockets) != 0)
@@ -488,7 +517,10 @@ int runsession(sigma_session* session)
                     session->remote->updateremote(session->remote);
                 }
 			}
+			continue;
 		}
+
+		return -1;
 
     }
 

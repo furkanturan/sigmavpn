@@ -4,7 +4,7 @@ This is the SigmaVPN's fork fot the "Hardware Acceleration of a Software-based V
 
 The parent repository of the project and details of it can be found [here](https://github.com/furkanturan/Hardware-Accelerated-SigmaVPN).
 
-# How to Cross-Compiles SigmaVPN for ZYBO Board 
+# How to Cross-Compile SigmaVPN for ZYBO Board 
 
 First the libraries should be cross compiled
 

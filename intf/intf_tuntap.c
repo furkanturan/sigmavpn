@@ -87,13 +87,13 @@ static ssize_t intf_read(sigma_intf *instance, uint8_t* output, size_t len)
 
     ssize_t ret = read(tuntap->baseintf.filedesc, output, len);
 
-    printf("\nETH Frame (%d) (%d): ", (int)len, (int)ret);
+    // //printf("\nETH Frame (%d) (%d): ", (int)len, (int)ret);
 
-	for(i=0; i<(int)len; i++)
-	{
-		printf("%x ", output[i]);
+	// for(i=0; i<(int)len; i++)
+	// {
+	// 	printf("%x ", output[i]);
 
-	}
+	// }
 
 	return ret;
 }
